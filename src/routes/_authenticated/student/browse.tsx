@@ -3,7 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, Loader2, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { createCourseOrder, verifyCoursePayment } from "@/lib/payments.functions";
+import {
+  createCourseOrder,
+  verifyCoursePayment,
+  simulateTestPayment,
+} from "@/lib/payments.functions";
 import {
   enrollInCourse,
   getMyEnrollments,
@@ -108,12 +112,28 @@ function BrowseCoursesPage() {
         return;
       }
 
+      const order = await createCourseOrder({ data: { courseId: course.id } });
+
+      if (order.isTestMode) {
+        const sim = await simulateTestPayment({ data: { orderId: order.orderId } });
+        await verifyCoursePayment({
+          data: {
+            courseId: course.id,
+            orderId: sim.razorpay_order_id,
+            paymentId: sim.razorpay_payment_id,
+            signature: sim.razorpay_signature,
+          },
+        });
+        await enrollFreeCourse(course);
+        setMessage(`Payment successful (Test Sandbox). You're enrolled in ${course.title}.`);
+        return;
+      }
+
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay)
         throw new Error(
           "Unable to load Razorpay Checkout. Check your internet connection and try again.",
         );
-      const order = await createCourseOrder({ data: { courseId: course.id } });
 
       await new Promise<void>((resolve, reject) => {
         const checkout = new window.Razorpay!({

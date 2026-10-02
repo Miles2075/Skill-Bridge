@@ -583,6 +583,8 @@ function useCommerceState(
         friendlyMsg = "Checkout is temporarily unavailable. Free previews are still active.";
       } else if (raw.includes("connection") || raw.includes("network")) {
         friendlyMsg = "Network error. Please check your connection and retry.";
+      } else if (raw) {
+        friendlyMsg = raw;
       }
       notify(friendlyMsg, "error");
       setBuying(null);
