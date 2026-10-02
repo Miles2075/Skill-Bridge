@@ -11,6 +11,9 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 3000,
   },
+  optimizeDeps: {
+    exclude: ["@tanstack/react-router", "@tanstack/react-store"],
+  },
   plugins: [
     {
       name: "lms-dev-api-middleware",

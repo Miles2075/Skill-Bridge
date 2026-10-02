@@ -84,7 +84,7 @@ interface QuizResultState {
   completedAt: string;
 }
 
-export function StudentDashboardPage() {
+function StudentDashboardPage() {
   const { user } = useAuth();
   const displayName =
     (user?.user_metadata?.["display_name"] as string) || user?.email?.split("@")[0] || "Student";
@@ -1840,5 +1840,3 @@ export function StudentDashboardPage() {
     </div>
   );
 }
-
-export default StudentDashboardPage;

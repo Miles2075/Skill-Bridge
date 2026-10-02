@@ -80,6 +80,38 @@ function saveStoredSession(session: LocalAuthSession | null) {
       // ignore
     }
   }
+
+  try {
+    if (session?.user) {
+      const role =
+        (session.user.user_metadata?.role as "student" | "teacher" | "admin") || "student";
+      const localUser = {
+        id: session.user.id,
+        email: session.user.email || "",
+        user_metadata: {
+          display_name:
+            session.user.user_metadata?.display_name ||
+            session.user.email?.split("@")[0] ||
+            "Learner",
+          email: session.user.email || "",
+          role,
+        },
+        created_at: session.user.created_at,
+        updated_at: session.user.updated_at,
+      };
+      localStorage.setItem("skillbridge_local_session", JSON.stringify(localUser));
+      document.cookie = `sb-local-auth-token=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=2592000; SameSite=Lax`;
+      document.cookie = `skillbridge_role=${role}; path=/; max-age=2592000; SameSite=Lax`;
+    } else {
+      localStorage.removeItem("skillbridge_local_session");
+      document.cookie = "sb-local-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "skillbridge_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(new CustomEvent("local_auth_changed"));
+  window.dispatchEvent(new Event("storage"));
 }
 
 class ClientQueryBuilder<T = unknown> implements PromiseLike<{

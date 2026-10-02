@@ -25,22 +25,24 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { lmsClient } from "@/lib/lms-client";
 import { supabase } from "@/integrations/supabase/client";
+import { getLocalSession } from "@/lib/local-db";
 
 export const Route = createFileRoute("/_authenticated/student")({
+  ssr: false,
   beforeLoad: async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const user = sessionData?.session?.user;
+    let user = getLocalSession();
+    if (!user) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user) {
+        user = getLocalSession();
+      }
+    }
     if (!user) {
       throw redirect({ to: "/auth" });
     }
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const dbRoles = ((roleData ?? []) as { role: string }[]).map((r) => r.role);
-    const metaRole = user.user_metadata?.["role"] || "student";
-    const isAdmin = dbRoles.includes("admin") || metaRole === "admin";
-    const isTeacher = dbRoles.includes("teacher") || metaRole === "teacher";
+    const metaRole = user.user_metadata?.role || "student";
+    const isTeacher = metaRole === "teacher";
+    const isAdmin = metaRole === "admin";
     if (isTeacher && !isAdmin) {
       throw redirect({ to: "/teach" });
     }

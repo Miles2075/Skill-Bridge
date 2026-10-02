@@ -18,6 +18,12 @@ interface StoredUser extends LocalUser {
 
 const USERS_KEY = "skillbridge_local_users";
 const SESSION_KEY = "skillbridge_local_session";
+const ALL_SESSION_KEYS = [
+  "skillbridge_local_session",
+  "skillbridge_local_auth_session",
+  "sb-local-auth-token",
+  "sb-csjygxumpnonfupobhih-auth-token",
+];
 
 function readUsers(): StoredUser[] {
   if (typeof window === "undefined") return [];
@@ -99,24 +105,116 @@ export async function signInLocalUser(params: {
 
 export function setLocalSession(user: LocalUser) {
   if (typeof window === "undefined") return;
+  const now = new Date().toISOString();
+  const role = user.user_metadata?.role || "student";
+  const displayName = user.user_metadata?.display_name || user.email.split("@")[0] || "Learner";
+
+  const sessionData = {
+    access_token: `sb_token_${user.id}_${Date.now()}`,
+    token_type: "bearer",
+    expires_in: 86400 * 30,
+    expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
+    refresh_token: `sb_ref_${user.id}_${Date.now()}`,
+    user: {
+      id: user.id,
+      aud: "authenticated",
+      role: "authenticated",
+      email: user.email,
+      email_confirmed_at: now,
+      phone: "",
+      confirmed_at: now,
+      last_sign_in_at: now,
+      app_metadata: { provider: "email", providers: ["email"] },
+      user_metadata: {
+        display_name: displayName,
+        email: user.email,
+        role,
+        sub: user.id,
+      },
+      identities: [],
+      created_at: user.created_at || now,
+      updated_at: user.updated_at || now,
+      is_anonymous: false,
+    },
+  };
+
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  localStorage.setItem("skillbridge_local_auth_session", JSON.stringify(sessionData));
+  localStorage.setItem("sb-local-auth-token", JSON.stringify(sessionData));
+  localStorage.setItem("sb-csjygxumpnonfupobhih-auth-token", JSON.stringify(sessionData));
+
+  try {
+    document.cookie = `sb-local-auth-token=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=2592000; SameSite=Lax`;
+    document.cookie = `skillbridge_role=${role}; path=/; max-age=2592000; SameSite=Lax`;
+  } catch {
+    // ignore
+  }
+
   window.dispatchEvent(new CustomEvent("local_auth_changed"));
+  window.dispatchEvent(new Event("storage"));
 }
 
 export function getLocalSession(): LocalUser | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as LocalUser) : null;
-  } catch {
-    return null;
+
+  for (const key of ALL_SESSION_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (!parsed) continue;
+
+      if (parsed.email && parsed.user_metadata?.role) {
+        return parsed as LocalUser;
+      }
+
+      const u = parsed.user || (parsed.access_token ? parsed : null);
+      if (u && (u.email || u.id)) {
+        const role = (u.user_metadata?.role as LocalRole) || "student";
+        const displayName = u.user_metadata?.display_name || u.email?.split("@")[0] || "Learner";
+        const localUser: LocalUser = {
+          id: u.id || "00000000-0000-4000-a000-000000000001",
+          email: u.email || "student@skillbridge.edu",
+          user_metadata: {
+            display_name: displayName,
+            email: u.email || "student@skillbridge.edu",
+            role,
+          },
+          created_at: u.created_at || new Date().toISOString(),
+          updated_at: u.updated_at || new Date().toISOString(),
+        };
+        try {
+          localStorage.setItem(SESSION_KEY, JSON.stringify(localUser));
+        } catch {
+          // ignore
+        }
+        return localUser;
+      }
+    } catch {
+      // ignore
+    }
   }
+
+  return null;
 }
 
 export function clearLocalSession() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_KEY);
+  for (const key of ALL_SESSION_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    document.cookie = "sb-local-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "skillbridge_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  } catch {
+    // ignore
+  }
   window.dispatchEvent(new CustomEvent("local_auth_changed"));
+  window.dispatchEvent(new Event("storage"));
 }
 
 export function getLocalUserRole(user: LocalUser | null): LocalRole {
