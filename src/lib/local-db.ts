@@ -7,6 +7,7 @@ export interface LocalUser {
     display_name: string;
     email: string;
     role: LocalRole;
+    avatar_url?: string;
   };
   created_at: string;
   updated_at: string;
@@ -129,6 +130,7 @@ export function setLocalSession(user: LocalUser) {
         display_name: displayName,
         email: user.email,
         role,
+        avatar_url: user.user_metadata?.avatar_url,
         sub: user.id,
       },
       identities: [],
@@ -219,4 +221,45 @@ export function clearLocalSession() {
 
 export function getLocalUserRole(user: LocalUser | null): LocalRole {
   return user?.user_metadata?.role ?? "student";
+}
+
+export function updateLocalSessionProfile(params: {
+  displayName?: string;
+  avatarUrl?: string | null;
+}) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const current = getLocalSession();
+    if (!current) return;
+    if (params.displayName !== undefined) current.user_metadata.display_name = params.displayName;
+    if (params.avatarUrl !== undefined) {
+      if (params.avatarUrl === null) delete current.user_metadata.avatar_url;
+      else current.user_metadata.avatar_url = params.avatarUrl;
+    }
+    current.updated_at = new Date().toISOString();
+    localStorage.setItem(SESSION_KEY, JSON.stringify(current));
+
+    const users = readUsers();
+    const index = users.findIndex((item) => item.id === current.id);
+    if (index >= 0) {
+      users[index] = { ...users[index], ...current, user_metadata: { ...users[index].user_metadata, ...current.user_metadata } };
+      writeUsers(users);
+    }
+
+    for (const key of ["sb-local-auth-token", "sb-csjygxumpnonfupobhih-auth-token", "skillbridge_local_auth_session"]) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const session = JSON.parse(raw);
+      if (session?.user?.id === current.id) {
+        session.user.user_metadata = { ...session.user.user_metadata, ...current.user_metadata };
+        session.user.updated_at = current.updated_at;
+        localStorage.setItem(key, JSON.stringify(session));
+      }
+    }
+  } catch {
+    // ignore local session sync failures
+  }
+  window.dispatchEvent(new CustomEvent("local_auth_changed"));
+  window.dispatchEvent(new Event("storage"));
 }
