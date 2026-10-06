@@ -81,7 +81,6 @@ function StudentRouteLayout() {
   const displayName =
     (user?.user_metadata?.["display_name"] as string) || user?.email?.split("@")[0] || "Student";
   const initials = (displayName[0] || "S").toUpperCase();
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   const [activeView, setActiveView] = useState<StudentNavView>(() => {
     if (typeof window !== "undefined") {
@@ -297,11 +296,7 @@ function StudentRouteLayout() {
                 className="flex items-center gap-2 text-left cursor-pointer group"
               >
                 <div className="grid size-8 place-items-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold uppercase text-white shadow-xs group-hover:ring-2 group-hover:ring-indigo-300 transition-all">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    initials
-                  )}
+                  {initials}
                 </div>
                 <div className="hidden sm:flex flex-col">
                   <span className="text-xs font-semibold text-slate-800 leading-tight group-hover:text-indigo-600">
