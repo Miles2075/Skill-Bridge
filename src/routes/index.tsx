@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   createCourseOrder,
   verifyCoursePayment,
-  simulateTestPayment,
   getUserPurchases,
 } from "@/lib/payments.functions";
 import {
@@ -261,14 +260,6 @@ type Commerce = {
   firstName: string;
   courses: Course[];
   dashboardData: StudentDashboardData | null;
-  testModalOrder: {
-    course: Course;
-    orderId: string;
-    amount: number;
-    title: string;
-  } | null;
-  cancelTestCheckout: () => void;
-  confirmTestPayment: (simulateFailure?: boolean) => Promise<void>;
 };
 const CommerceContext = createContext<Commerce | null>(null);
 const useCommerce = () => useContext(CommerceContext)!;
@@ -303,13 +294,6 @@ function useCommerceState(
   const [buying, setBuying] = useState<string | null>(null);
   const [coursesList, setCoursesList] = useState<Course[]>(initialCourses);
   const [dashboardData, setDashboardData] = useState<StudentDashboardData | null>(null);
-  const [testModalOrder, setTestModalOrder] = useState<{
-    course: Course;
-    orderId: string;
-    amount: number;
-    title: string;
-  } | null>(null);
-
   const loadLmsProgress = useCallback(async () => {
     try {
       const studentDashboard = user
@@ -359,7 +343,6 @@ function useCommerceState(
 
   const createOrder = useServerFn(createCourseOrder);
   const verify = useServerFn(verifyCoursePayment);
-  const simulatePayment = useServerFn(simulateTestPayment);
   const fetchPurchases = useServerFn(getUserPurchases);
 
   useEffect(() => {
@@ -439,58 +422,6 @@ function useCommerceState(
     loadOwned();
   }, [loadOwned]);
 
-  const cancelTestCheckout = () => {
-    setTestModalOrder(null);
-    setBuying(null);
-  };
-
-  const confirmTestPayment = async (simulateFailure = false) => {
-    if (!testModalOrder || !user) return;
-    const { course, orderId } = testModalOrder;
-    const m = meta[course.slug];
-    if (!m) return;
-
-    if (simulateFailure) {
-      setTestModalOrder(null);
-      setBuying(null);
-      notify("Your payment was not completed. You have not been charged.", "error");
-      return;
-    }
-
-    try {
-      const sim = await simulatePayment({ data: { orderId } });
-      await verify({
-        data: {
-          courseId: m.id,
-          orderId: sim.razorpay_order_id,
-          paymentId: sim.razorpay_payment_id,
-          signature: sim.razorpay_signature,
-        },
-      });
-      const localKey = `skillbridge_purchases_${user.id}`;
-      try {
-        const localIds: string[] = JSON.parse(localStorage.getItem(localKey) ?? "[]");
-        if (!localIds.includes(m.id)) {
-          localIds.push(m.id);
-          localStorage.setItem(localKey, JSON.stringify(localIds));
-        }
-      } catch {
-        // ignore
-      }
-      setOwned((prev) => new Set([...prev, m.id]));
-      await loadOwned();
-      setTestModalOrder(null);
-      notify(`Payment confirmed! You now have full access to ${course.title}.`, "success");
-    } catch (e: unknown) {
-      console.error(e);
-      notify(
-        e instanceof Error ? e.message : "Payment verification failed. Please try again.",
-        "error",
-      );
-    } finally {
-      setBuying(null);
-    }
-  };
 
   const buy = async (course: Course) => {
     if (buying !== null) return;
@@ -503,16 +434,6 @@ function useCommerceState(
     setBuying(course.slug);
     try {
       const order = await createOrder({ data: { courseId: m.id } });
-
-      if (order.isTestMode) {
-        setTestModalOrder({
-          course,
-          orderId: order.orderId,
-          amount: order.amount,
-          title: order.title,
-        });
-        return;
-      }
 
       if (!(await loadRazorpay()) || !window.Razorpay) {
         throw new Error(
@@ -625,9 +546,6 @@ function useCommerceState(
     firstName,
     courses: coursesList,
     dashboardData,
-    testModalOrder,
-    cancelTestCheckout,
-    confirmTestPayment,
   };
 }
 
@@ -943,73 +861,6 @@ function Skillbridge() {
           />
         )}
 
-        {commerce.testModalOrder && (
-          <div className="fixed inset-0 z-[80] grid place-items-center bg-black/60 p-4 backdrop-blur-xs">
-            <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <span className="rounded bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                  Razorpay Test Mode
-                </span>
-                <button
-                  onClick={commerce.cancelTestCheckout}
-                  className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-
-              <div className="mt-4">
-                <h3 className="text-lg font-bold">{commerce.testModalOrder.title}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Simulating Razorpay payment gateway in test mode with server-side HMAC-SHA256
-                  signature verification.
-                </p>
-
-                <div className="mt-4 rounded-lg border border-border bg-secondary/40 p-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Amount to pay</span>
-                    <span className="font-extrabold text-foreground">
-                      {rupees(commerce.testModalOrder.amount / 100)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Order ID</span>
-                    <span className="font-mono text-[11px]">{commerce.testModalOrder.orderId}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Environment</span>
-                    <span className="font-medium text-emerald-500">Test / Sandbox Mode</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-2.5">
-                  <Button
-                    variant="chrome"
-                    className="w-full"
-                    onClick={() => commerce.confirmTestPayment(false)}
-                  >
-                    <CheckCircle2 className="size-4" /> Complete Test Payment (Success)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full text-destructive hover:bg-destructive/10"
-                    onClick={() => commerce.confirmTestPayment(true)}
-                  >
-                    <AlertCircle className="size-4" /> Simulate Payment Failure
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-xs text-muted-foreground"
-                    onClick={commerce.cancelTestCheckout}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {toast && (
           <div
