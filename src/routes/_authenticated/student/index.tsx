@@ -602,7 +602,7 @@ function StudentDashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 justify-items-center gap-4 pt-1">
               {/* Feature 1: Hands-on Code Lab */}
               <div
                 onClick={() => switchView("codelab")}
