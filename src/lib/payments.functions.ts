@@ -93,7 +93,6 @@ export const createCourseOrder = createServerFn({ method: "POST" })
       currency: order.currency || "INR",
       keyId,
       title: course.title,
-      isTestMode: keyId.startsWith("rzp_test_"),
     };
   });
 
@@ -141,25 +140,3 @@ export const getUserPurchases = createServerFn({ method: "GET" }).handler(
   async () => [] as string[],
 );
 
-export const simulateTestPayment = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ orderId: z.string().min(1).max(120) }).parse(d))
-  .handler(
-    async ({
-      data,
-    }): Promise<{
-      razorpay_order_id: string;
-      razorpay_payment_id: string;
-      razorpay_signature: string;
-    }> => {
-      const { keySecret } = getRazorpayCredentials();
-      const paymentId = `pay_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const signature = createHmac("sha256", keySecret)
-        .update(`${data.orderId}|${paymentId}`)
-        .digest("hex");
-      return {
-        razorpay_order_id: data.orderId,
-        razorpay_payment_id: paymentId,
-        razorpay_signature: signature,
-      };
-    },
-  );
