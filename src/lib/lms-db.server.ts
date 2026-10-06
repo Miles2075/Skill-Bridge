@@ -1649,6 +1649,36 @@ class DatabaseManager {
     return { user: newUser, session, roles: [role] };
   }
 
+  updateUserProfile(
+    userId: string,
+    params: { displayName?: string; avatarUrl?: string | null },
+  ): LocalUser | null {
+    const db = this.read();
+    const user = db.users.find((candidate) => candidate.id === userId);
+    if (!user) return null;
+
+    if (params.displayName !== undefined) {
+      const displayName = params.displayName.trim();
+      if (!displayName) throw new Error("Display name cannot be empty.");
+      if (displayName.length > 80) throw new Error("Display name must be 80 characters or fewer.");
+      user.user_metadata.display_name = displayName;
+    }
+
+    if (params.avatarUrl !== undefined) {
+      if (params.avatarUrl !== null && params.avatarUrl.length > 2_000_000) {
+        throw new Error("Profile picture is too large. Please choose a smaller image.");
+      }
+      if (params.avatarUrl === null) delete user.user_metadata.avatar_url;
+      else user.user_metadata.avatar_url = params.avatarUrl;
+    }
+
+    user.updated_at = new Date().toISOString();
+    const profile = db.profiles.find((item) => item.id === userId);
+    if (profile && params.displayName !== undefined) profile.display_name = user.user_metadata.display_name;
+    this.write();
+    return user;
+  }
+
   authenticateUser(
     email: string,
     password: string,
