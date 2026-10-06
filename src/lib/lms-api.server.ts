@@ -110,6 +110,10 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const { email, password, metadata } = body;
       if (!email || !password) return errorResponse("Email and password are required");
 
+      if (lmsDB.findUserByEmail(email)) {
+        return errorResponse("An account with this email already exists. Please sign in instead.", 400);
+      }
+
       const res = lmsDB.registerUser({
         email,
         password,
