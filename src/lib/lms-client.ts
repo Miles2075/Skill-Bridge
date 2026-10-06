@@ -294,6 +294,14 @@ export const lmsClient = {
     return request<InstructorDashboardData>("instructor-data");
   },
 
+  // PROFILE
+  async updateProfile(data: { displayName?: string; avatarUrl?: string | null }): Promise<{ user: { id: string; email: string; user_metadata: Record<string, unknown> } }> {
+    return request("profile", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
   // COURSE MANAGEMENT
   async createCourse(data: Partial<ClientCourse>): Promise<{ course: ClientCourse }> {
     return request("course", {
