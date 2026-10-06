@@ -1789,6 +1789,7 @@ function PlayerModal({
     }>
   >([]);
   const [active, setActive] = useState(0);
+  const [courseVideoUrl, setCourseVideoUrl] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -1796,6 +1797,7 @@ function PlayerModal({
       .getCourse(course.slug)
       .then((res) => {
         if (!mounted) return;
+        setCourseVideoUrl(res.course?.video_url || "");
         const completedIds = new Set(
           (res.lessonProgress || []).filter((p) => p.completed).map((p) => p.lesson_id),
         );
@@ -1954,7 +1956,7 @@ function PlayerModal({
               <video
                 key={active}
                 ref={videoRef}
-                src={m.videoUrl}
+                src={lecture.video_url || courseVideoUrl || m.videoUrl}
                 poster={course.image}
                 controls={!locked}
                 onTimeUpdate={onTime}
