@@ -325,13 +325,12 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
     }
 
     // POST /api/lms/upload-video
+    // The request body is the video file itself, not multipart/form-data.
     if (path === "upload-video" && method === "POST") {
       if (!user.isTeacher || !user.userId) return errorResponse("Forbidden: Instructor role required", 403);
 
-      const formData = await req.formData();
-      const courseId = String(formData.get("courseId") || "");
-      const video = formData.get("video");
-      if (!courseId || !(video instanceof File)) return errorResponse("Course and video file are required.");
+      const courseId = url.searchParams.get("courseId") || "";
+      if (!courseId) return errorResponse("Course id is required.");
 
       const course = lmsDB.getCourse(courseId);
       if (!course) return errorResponse("Course not found.", 404);
@@ -340,12 +339,23 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       }
 
       const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
-      if (video.size > MAX_VIDEO_SIZE) {
+      const declaredSize = Number(req.headers.get("x-file-size") || req.headers.get("content-length") || 0);
+      if (declaredSize > MAX_VIDEO_SIZE) {
         return errorResponse("Video is too large. Maximum file size is 500 MB.", 413);
+      }
+      if (!req.body) return errorResponse("Video file is required.", 400);
+
+      let originalName = "video.mp4";
+      const encodedName = req.headers.get("x-file-name");
+      if (encodedName) {
+        try {
+          originalName = decodeURIComponent(encodedName);
+        } catch {
+          originalName = encodedName;
+        }
       }
 
       const allowedExtensions = new Set([".mp4", ".webm", ".mov", ".m4v"]);
-      const originalName = video.name || "video.mp4";
       const dot = originalName.lastIndexOf(".");
       const extension = dot >= 0 ? originalName.slice(dot).toLowerCase() : "";
       if (!allowedExtensions.has(extension)) {
@@ -362,15 +372,25 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const uploadDir = path.resolve(process.cwd(), "public", "uploads", "videos");
       await fs.promises.mkdir(uploadDir, { recursive: true });
       const filePath = path.join(uploadDir, uniqueName);
-      await pipeline(
-        Readable.fromWeb(video.stream()),
-        fs.createWriteStream(filePath),
-      );
+
+      try {
+        await pipeline(
+          Readable.fromWeb(req.body as ReadableStream<Uint8Array>),
+          fs.createWriteStream(filePath),
+        );
+      } catch (err) {
+        await fs.promises.rm(filePath, { force: true }).catch(() => {});
+        if (req.signal.aborted) {
+          console.warn("Video upload request was aborted by the client.");
+          return errorResponse("Video upload was cancelled before completion.", 499);
+        }
+        throw err;
+      }
 
       return jsonResponse({
         videoUrl: `/uploads/videos/${uniqueName}`,
         fileName: originalName,
-        size: video.size,
+        size: declaredSize,
       });
     }
 
