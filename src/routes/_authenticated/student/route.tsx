@@ -265,12 +265,17 @@ function StudentRouteLayout() {
               {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
 
-            <Link to="/" className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => switchView("dashboard")}
+              className="flex items-center gap-2.5 cursor-pointer"
+              aria-label="Go to student dashboard"
+            >
               <span className="grid size-8 place-items-center rounded-lg bg-indigo-600 font-extrabold text-white shadow-xs">
                 S
               </span>
               <span className="text-lg font-bold tracking-tight text-slate-900">skillbridge</span>
-            </Link>
+            </button>
 
             <span className="hidden sm:inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 border border-indigo-100">
               Student Learning Space
