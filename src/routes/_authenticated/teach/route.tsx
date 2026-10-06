@@ -82,6 +82,7 @@ function TeachLayoutRoute() {
     user?.email?.split("@")[0] ||
     "Faculty Lead";
   const initials = (displayName[0] || "T").toUpperCase();
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   const [activeView, setActiveView] = useState<InstructorNavView>(() => {
     if (typeof window !== "undefined") {
@@ -261,8 +262,12 @@ function TeachLayoutRoute() {
                 onClick={() => switchView("profile")}
                 className="flex items-center gap-2 text-left cursor-pointer group"
               >
-                <div className="grid size-8 place-items-center rounded-full bg-teal-100 text-xs font-bold text-teal-800 group-hover:ring-2 group-hover:ring-teal-300">
-                  {initials}
+                <div className="grid size-8 place-items-center overflow-hidden rounded-full bg-teal-100 text-xs font-bold text-teal-800 group-hover:ring-2 group-hover:ring-teal-300">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials
+                  )}
                 </div>
                 <div className="hidden sm:flex flex-col">
                   <span className="text-xs font-semibold text-slate-800 leading-tight group-hover:text-teal-700">
