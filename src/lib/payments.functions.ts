@@ -36,12 +36,14 @@ function findCourse(courseId: string) {
 }
 
 function getRazorpayCredentials() {
-  const envKeyId = process.env["RAZORPAY_KEY_ID"];
-  const envKeySecret = process.env["RAZORPAY_KEY_SECRET"];
-  const isConfigured = Boolean(envKeyId && envKeySecret);
-  const keyId = envKeyId || "rzp_test_skillbridge_local";
-  const keySecret = envKeySecret || "skillbridge_test_secret_123456";
-  return { keyId, keySecret, isConfigured };
+  const keyId = process.env["RAZORPAY_KEY_ID"];
+  const keySecret = process.env["RAZORPAY_KEY_SECRET"];
+  if (!keyId || !keySecret) {
+    throw new Error(
+      "Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to your local server environment.",
+    );
+  }
+  return { keyId, keySecret };
 }
 
 async function razorpayRequest(path: string, init: RequestInit = {}) {
@@ -73,40 +75,25 @@ export const createCourseOrder = createServerFn({ method: "POST" })
   .validator((d) => z.object({ courseId: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
     const course = findCourse(data.courseId);
-    const { keyId, isConfigured } = getRazorpayCredentials();
+    const { keyId } = getRazorpayCredentials();
 
-    if (isConfigured && !keyId.startsWith("rzp_test_")) {
-      try {
-        const order = await razorpayRequest("/orders", {
-          method: "POST",
-          body: JSON.stringify({
-            amount: course.price * 100,
-            currency: "INR",
-            receipt: `course_${data.courseId}_${Date.now()}`.slice(0, 40),
-            notes: { course_id: data.courseId, course_title: course.title },
-          }),
-        });
-        return {
-          orderId: order.id || `order_${Date.now()}`,
-          amount: order.amount || course.price * 100,
-          currency: order.currency || "INR",
-          keyId,
-          title: course.title,
-          isTestMode: false,
-        };
-      } catch (err) {
-        console.warn("Live Razorpay call failed, falling back to test sandbox:", err);
-      }
-    }
+    const order = await razorpayRequest("/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        amount: course.price * 100,
+        currency: "INR",
+        receipt: `course_${data.courseId}_${Date.now()}`.slice(0, 40),
+        notes: { course_id: data.courseId, course_title: course.title },
+      }),
+    });
 
-    const testOrderId = `order_test_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     return {
-      orderId: testOrderId,
-      amount: course.price * 100,
-      currency: "INR",
+      orderId: order.id,
+      amount: order.amount || course.price * 100,
+      currency: order.currency || "INR",
       keyId,
       title: course.title,
-      isTestMode: true,
+      isTestMode: keyId.startsWith("rzp_test_"),
     };
   });
 
