@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { lmsDB } from "./lms-db.server";
