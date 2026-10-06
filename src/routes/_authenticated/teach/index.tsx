@@ -1247,9 +1247,10 @@ function TeachDashboardPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold cursor-pointer"
+                  disabled={isUploadingVideo}
+                  className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold cursor-pointer disabled:opacity-60"
                 >
-                  Add Lesson to Syllabus
+                  {isUploadingVideo ? "Uploading video…" : "Add Lesson to Syllabus"}
                 </Button>
               </form>
             </div>
