@@ -30,6 +30,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { lmsClient } from "@/lib/lms-client";
@@ -1873,6 +1874,17 @@ function TeachDashboardPage() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-5 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <p className="font-bold text-slate-900">Appearance</p>
+                <p className="text-slate-500 mt-0.5">
+                  Switch between the light and dark Skillbridge theme.
+                </p>
+              </div>
+              <ThemeToggle />
+            </div>
+
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-slate-900">Immediate Submission Alerts</p>
