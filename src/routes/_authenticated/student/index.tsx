@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { lmsClient, type StudentDashboardData } from "@/lib/lms-client";
@@ -1481,6 +1482,17 @@ function StudentDashboardPage() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-5 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h4 className="font-bold text-slate-900">Appearance</h4>
+                <p className="text-slate-500 text-[11px]">
+                  Switch between the light and dark Skillbridge theme.
+                </p>
+              </div>
+              <ThemeToggle />
+            </div>
+
+
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-slate-900">Assignment Notifications</h4>
