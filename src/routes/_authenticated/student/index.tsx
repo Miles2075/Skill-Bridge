@@ -641,7 +641,7 @@ function StudentDashboardPage() {
                     <div className="grid size-10 place-items-center rounded-lg bg-purple-100 text-purple-700 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                       <Brain className="size-5" />
                     </div>
-                    <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-100">
+                    <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-100 whitespace-nowrap">
                       Spaced Repetition
                     </span>
                   </div>
@@ -669,7 +669,7 @@ function StudentDashboardPage() {
                     <div className="grid size-10 place-items-center rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors">
                       <Timer className="size-5" />
                     </div>
-                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-100">
+                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-100 whitespace-nowrap">
                       Deep Work
                     </span>
                   </div>
