@@ -93,6 +93,8 @@ function StudentRouteLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingAssignments, setPendingAssignments] = useState(0);
   const [quizzesCount, setQuizzesCount] = useState(0);
+  const [enrolledCoursesCount, setEnrolledCoursesCount] = useState(0);
+  const [certificatesCount, setCertificatesCount] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -106,6 +108,8 @@ function StudentRouteLayout() {
           ).length;
           setPendingAssignments(pending);
           setQuizzesCount(data.studentQuizzes.length);
+          setEnrolledCoursesCount(data.enrolledCourses.length);
+          setCertificatesCount(data.certificates.length);
         }
       } catch {
         // ignore
@@ -198,7 +202,7 @@ function StudentRouteLayout() {
     badgeColor?: string | undefined;
   }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "courses", label: "My Courses", icon: BookOpen, badge: "4 Active" },
+    { id: "courses", label: "My Courses", icon: BookOpen, badge: `${enrolledCoursesCount} Active` },
     {
       id: "assignments",
       label: "Assignments",
@@ -239,7 +243,7 @@ function StudentRouteLayout() {
       id: "certificates",
       label: "Certificates",
       icon: Award,
-      badge: "2 Earned",
+      badge: `${certificatesCount} Earned`,
       badgeColor: "bg-emerald-100 text-emerald-800",
     },
     { id: "profile", label: "Profile", icon: User },
