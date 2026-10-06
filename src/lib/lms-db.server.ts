@@ -1606,9 +1606,7 @@ class DatabaseManager {
     const cleanEmail = params.email.trim().toLowerCase();
     const existing = this.findUserByEmail(cleanEmail);
     if (existing) {
-      const session = this.createSession(existing.id);
-      const roles = this.getUserRoles(existing.id);
-      return { user: existing, session, roles };
+      throw new Error("An account with this email already exists. Please sign in instead.");
     }
 
     const salt = crypto.randomBytes(16).toString("hex");
@@ -1661,7 +1659,7 @@ class DatabaseManager {
     if (!user) return null;
 
     const hash = hashPassword(password, user.salt);
-    if (hash !== user.password_hash && password !== "password123") {
+    if (hash !== user.password_hash) {
       return null;
     }
 
