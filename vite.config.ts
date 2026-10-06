@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   server: {
@@ -15,8 +16,9 @@ export default defineConfig({
     tanstackStart({
       server: { entry: "server" },
     }),
-    react(),
     nitro(),
+    tailwindcss(),
+    react(),
     {
       name: "lms-dev-api-middleware",
       configureServer(server) {
