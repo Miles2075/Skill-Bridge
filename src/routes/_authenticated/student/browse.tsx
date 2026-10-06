@@ -66,13 +66,13 @@ function BrowseCoursesPage() {
     const studentId = user?.id;
     if (!studentId) return;
     let cancelled = false;
-    async function load() {
+    async function load(currentStudentId: string) {
       setLoading(true);
       setError(null);
       try {
         const [courseData, enrollmentData] = await Promise.all([
           listPublishedCourses(),
-          getMyEnrollments(studentId),
+          getMyEnrollments(currentStudentId),
         ]);
         if (!cancelled) {
           setCourses(courseData);
@@ -84,7 +84,7 @@ function BrowseCoursesPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    void load();
+    void load(studentId);
     return () => {
       cancelled = true;
     };
