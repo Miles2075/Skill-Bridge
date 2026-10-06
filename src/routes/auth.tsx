@@ -169,15 +169,7 @@ function AuthPage() {
           return;
         }
 
-        // If local authentication or fallback is needed, establish session directly
-        const detectedRole =
-          cleanEmail.includes("teacher") || cleanEmail.includes("instructor") ? "teacher" : role;
-        establishDirectSession({
-          email: cleanEmail,
-          role: detectedRole,
-          name: cleanEmail.split("@")[0],
-        });
-        window.location.href = getRedirectRoute(detectedRole);
+        setMsg(error?.message || "Invalid email or password.");
         return;
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -188,28 +180,22 @@ function AuthPage() {
           },
         });
 
-        if (error && !error.message.toLowerCase().includes("already registered")) {
+        if (error) {
           setMsg(error.message);
-        } else {
-          // Immediately log in without any email confirmation barrier
-          establishDirectSession({
-            id: data?.user?.id,
-            email: cleanEmail,
-            name: name.trim() || cleanEmail.split("@")[0],
-            role,
-          });
-          window.location.href = getRedirectRoute(role);
           return;
         }
+
+        if (!data?.session) {
+          setMsg("Account created, but the session could not be started.");
+          return;
+        }
+
+        window.location.href = getRedirectRoute(role);
+        return;
       }
     } catch (err: unknown) {
       console.error("Auth submit error:", err);
-      establishDirectSession({
-        email: cleanEmail,
-        name: name.trim() || cleanEmail.split("@")[0],
-        role,
-      });
-      window.location.href = getRedirectRoute(role);
+      setMsg(err instanceof Error ? err.message : "Authentication failed.");
     } finally {
       setBusy(false);
     }
