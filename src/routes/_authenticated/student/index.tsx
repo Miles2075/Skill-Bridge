@@ -41,6 +41,7 @@ import type { StudentNavView } from "./route";
 import { CodeLabView } from "@/components/student/CodeLabView";
 import { RecallDecksView } from "@/components/student/RecallDecksView";
 import { FocusStudioView } from "@/components/student/FocusStudioView";
+import { ProfileEditor } from "@/components/ProfileEditor";
 
 import tsThumb from "@/assets/course-typescript.jpg";
 import reactThumb from "@/assets/course-react.jpg";
@@ -1440,39 +1441,28 @@ function StudentDashboardPage() {
       {/* VIEW 8: PROFILE */}
       {/* ------------------------------------------------------------- */}
       {currentView === "profile" && (
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6 max-w-3xl">
           <div className="border-b border-slate-200 pb-3">
             <h1 className="text-xl font-extrabold text-slate-900">Student Profile</h1>
             <p className="text-xs text-slate-500">
-              Your verified student identity and enrollment status.
+              Change your profile picture and name. Your certificate count is shown below.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="grid size-16 place-items-center rounded-full bg-indigo-600 text-xl font-bold text-white shadow-xs">
-                {(displayName[0] || "S").toUpperCase()}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{displayName}</h2>
-                <p className="text-xs text-slate-500">{email}</p>
-                <span className="inline-block mt-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
-                  Active Student Scholar
-                </span>
-              </div>
-            </div>
+          {user && <ProfileEditor user={user} roleLabel="Active Student Scholar" />}
 
-            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 text-xs">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-slate-500">Enrolled Courses:</span>
-                <p className="font-bold text-slate-900 mt-0.5">{enrolledCourses.length}</p>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-slate-500">Completed Courses:</span>
-                <p className="font-bold text-slate-900 mt-0.5">
-                  {data?.completedCoursesCount || 0}
-                </p>
-              </div>
+          <div className="grid grid-cols-3 gap-3 text-xs">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <span className="text-slate-500">Enrolled Courses</span>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{enrolledCourses.length}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <span className="text-slate-500">Completed Courses</span>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{data?.completedCoursesCount || 0}</p>
+            </div>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-2xs">
+              <span className="text-emerald-700">Certificates Earned</span>
+              <p className="mt-1 text-2xl font-extrabold text-emerald-800">{data?.certificates.length || 0}</p>
             </div>
           </div>
         </div>
