@@ -1,24 +1,18 @@
-# Polish & Perfect
+# SkillBridge
 
-fix everything which is wrong and improve the ui and ux and the colour scheme
+SkillBridge is a local online learning platform for students and instructors.
 
-This project was built with [Lovable](https://lovable.dev).
+## Local development
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/90796ed0-42d2-43ed-a4e6-1156c058b663).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requirements: Node.js and npm.
 
 ```sh
 git clone <this-repository-url>
-cd <repository-name>
-npm i
+cd Skill-Bridge
+npm install
 npm run dev
 ```
+
+Open http://localhost:3000 in your browser.
+
+The application uses its built-in local LMS API and local authentication/database implementation for development. No hosted platform is required.
