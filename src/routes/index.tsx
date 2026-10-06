@@ -464,7 +464,30 @@ function useCommerceState(
                 signature: r.razorpay_signature,
               },
             });
+
+            // A verified payment must also create the LMS enrollment.
+            // This is what makes the course appear in My Learning and unlocks its lessons.
+            const displayName =
+              (user.user_metadata?.["display_name"] as string | undefined) ||
+              user.email?.split("@")[0] ||
+              "Student Learner";
+            await lmsClient.enroll(m.id, displayName, user.email || "");
+
+            // Keep the purchase locally so the paid course remains unlocked after refresh.
+            const localKey = `skillbridge_purchases_${user.id}`;
+            try {
+              const localIds: string[] = JSON.parse(localStorage.getItem(localKey) ?? "[]");
+              if (!localIds.includes(m.id)) {
+                localIds.push(m.id);
+                localStorage.setItem(localKey, JSON.stringify(localIds));
+              }
+            } catch {
+              // ignore localStorage failures; the LMS enrollment is already persisted.
+            }
+
+            setOwned((prev) => new Set([...prev, m.id]));
             await loadOwned();
+            await loadLmsProgress();
             notify(`Payment confirmed! You now have full access to ${course.title}.`, "success");
           } catch (e) {
             console.error("Payment verification error:", e);
