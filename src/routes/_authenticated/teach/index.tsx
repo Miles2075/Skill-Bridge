@@ -25,6 +25,7 @@ import {
   TrendingUp,
   User,
   Users,
+  Upload,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -291,6 +292,8 @@ function TeachDashboardPage() {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [newLessonDuration, setNewLessonDuration] = useState("20m");
   const [newLessonVideoUrl, setNewLessonVideoUrl] = useState("");
+  const [newLessonVideoFile, setNewLessonVideoFile] = useState<File | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [newLessonOrder, setNewLessonOrder] = useState<number>(0);
   const [newLessonRequired, setNewLessonRequired] = useState(true);
   const [newLessonPreview, setNewLessonPreview] = useState(false);
@@ -497,10 +500,18 @@ function TeachDashboardPage() {
     if (!newLessonTitle.trim()) return;
 
     try {
+      setIsUploadingVideo(Boolean(newLessonVideoFile));
+      let videoUrl = newLessonVideoUrl.trim();
+
+      if (newLessonVideoFile) {
+        const uploaded = await lmsClient.uploadVideo(selectedContentCourse, newLessonVideoFile);
+        videoUrl = uploaded.videoUrl;
+      }
+
       const { lesson } = await lmsClient.addLesson(selectedContentCourse, {
         title: newLessonTitle.trim(),
         duration: newLessonDuration.trim(),
-        videoUrl: newLessonVideoUrl.trim() || undefined,
+        videoUrl: videoUrl || undefined,
         lessonOrder: newLessonOrder > 0 ? newLessonOrder : undefined,
         isRequired: newLessonRequired,
         isPreview: newLessonPreview,
@@ -519,6 +530,7 @@ function TeachDashboardPage() {
       ]);
       setNewLessonTitle("");
       setNewLessonVideoUrl("");
+      setNewLessonVideoFile(null);
       setNewLessonOrder(0);
       setMsg({ text: `Lesson "${lesson.title}" added to syllabus!` });
       window.dispatchEvent(new CustomEvent("lms_data_updated"));
@@ -527,6 +539,8 @@ function TeachDashboardPage() {
         text: err instanceof Error ? err.message : "Failed to add lesson",
         isError: true,
       });
+    } finally {
+      setIsUploadingVideo(false);
     }
   };
 
@@ -1160,6 +1174,23 @@ function TeachDashboardPage() {
                     onChange={(e) => setNewLessonDuration(e.target.value)}
                     className="text-xs"
                   />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Upload Video (Optional)
+                  </label>
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700">
+                    <Upload className="size-4" />
+                    <span>{newLessonVideoFile ? newLessonVideoFile.name : "Choose video file"}</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                      className="hidden"
+                      onChange={(e) => setNewLessonVideoFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <p className="mt-1 text-[10px] text-slate-400">MP4, WebM, MOV or M4V · max 500 MB</p>
                 </div>
 
                 <div>
