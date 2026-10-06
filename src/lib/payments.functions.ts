@@ -143,7 +143,7 @@ export const verifyCoursePayment = createServerFn({ method: "POST" })
         if (payment.status !== "captured")
           throw new Error(`Payment is not captured. Current status: ${payment.status}`);
       } catch (err) {
-        console.warn("Live verification check:", err);
+        throw err instanceof Error ? err : new Error("Live payment verification failed");
       }
     }
 
