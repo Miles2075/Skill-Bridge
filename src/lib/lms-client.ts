@@ -327,17 +327,17 @@ export const lmsClient = {
   // VIDEO UPLOADS
   async uploadVideo(courseId: string, file: File): Promise<{ videoUrl: string; fileName: string; size: number }> {
     const authHeaders = await getAuthHeaders();
-    const headers = { ...authHeaders } as Record<string, string>;
-    delete headers["Content-Type"];
+    const headers: Record<string, string> = {
+      ...authHeaders,
+      "Content-Type": file.type || "application/octet-stream",
+      "X-File-Name": encodeURIComponent(file.name),
+      "X-File-Size": String(file.size),
+    };
 
-    const formData = new FormData();
-    formData.append("courseId", courseId);
-    formData.append("video", file);
-
-    const res = await fetch("/api/lms/upload-video", {
+    const res = await fetch(`/api/lms/upload-video?courseId=${encodeURIComponent(courseId)}`, {
       method: "POST",
       headers,
-      body: formData,
+      body: file,
     });
 
     if (!res.ok) {
