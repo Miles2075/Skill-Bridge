@@ -266,6 +266,8 @@ function TeachDashboardPage() {
   const [newVideoUrl, setNewVideoUrl] = useState(
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
   );
+  const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [isUploadingCourseVideo, setIsUploadingCourseVideo] = useState(false);
   const [newStatus, setNewStatus] = useState<"published" | "draft">("published");
 
   // Create Assignment Form State
@@ -393,6 +395,7 @@ function TeachDashboardPage() {
     }
 
     try {
+      setIsUploadingCourseVideo(Boolean(newVideoFile));
       const { course } = await lmsClient.createCourse({
         title: newTitle.trim(),
         slug: newSlug.trim().toLowerCase().replace(/\s+/g, "-"),
@@ -406,10 +409,23 @@ function TeachDashboardPage() {
         instructor: displayName,
       });
 
-      setRows((prev) => [course as unknown as CourseRow, ...prev]);
+      let createdCourse = course as unknown as CourseRow;
+
+      if (newVideoFile) {
+        const uploaded = await lmsClient.uploadVideo(createdCourse.id, newVideoFile);
+        const updated = await lmsClient.updateCourse(createdCourse.id, {
+          video_url: uploaded.videoUrl,
+        });
+        createdCourse = updated.course as unknown as CourseRow;
+      }
+
+      setRows((prev) => [createdCourse, ...prev]);
       setNewTitle("");
       setNewSlug("");
-      setMsg({ text: `Course "${course.title}" successfully created and saved!` });
+      setNewVideoFile(null);
+      setMsg({
+        text: `Course "${createdCourse.title}" successfully created and saved!`,
+      });
       window.dispatchEvent(new CustomEvent("lms_data_updated"));
       switchView("courses");
     } catch (err: unknown) {
@@ -417,6 +433,8 @@ function TeachDashboardPage() {
         text: err instanceof Error ? err.message : "Failed to create course",
         isError: true,
       });
+    } finally {
+      setIsUploadingCourseVideo(false);
     }
   };
 
@@ -1045,7 +1063,26 @@ function TeachDashboardPage() {
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                Initial Video Stream URL
+                Upload Course Video (Optional)
+              </label>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700">
+                <Upload className="size-4" />
+                <span>{newVideoFile ? newVideoFile.name : "Choose video file"}</span>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                  className="hidden"
+                  onChange={(e) => setNewVideoFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              <p className="mt-1 text-[10px] text-slate-400">
+                MP4, WebM, MOV or M4V · max 500 MB
+              </p>
+            </div>
+
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">
+                Or Use Video Stream URL (Optional)
               </label>
               <Input
                 value={newVideoUrl}
@@ -1079,9 +1116,10 @@ function TeachDashboardPage() {
               <Button
                 type="submit"
                 size="sm"
-                className="bg-teal-700 hover:bg-teal-800 text-white font-bold cursor-pointer"
+                disabled={isUploadingCourseVideo}
+                className="bg-teal-700 hover:bg-teal-800 text-white font-bold cursor-pointer disabled:opacity-60"
               >
-                Publish Course
+                {isUploadingCourseVideo ? "Uploading video…" : "Publish Course"}
               </Button>
             </div>
           </form>
