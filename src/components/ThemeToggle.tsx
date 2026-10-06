@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
+function getSavedTheme() {
+  if (typeof window === "undefined") return "light";
+  return localStorage.getItem("skillbridge-theme") === "dark" ? "dark" : "light";
+}
+
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => getSavedTheme() === "dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("skillbridge-theme");
-    const isDark = saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", isDark);
-    setDark(isDark);
+    // Settings must never change the theme just by being opened.
+    // Only the saved choice (or the button below) controls the theme.
+    const saved = getSavedTheme();
+    document.documentElement.classList.toggle("dark", saved === "dark");
+    setDark(saved === "dark");
   }, []);
 
   const toggleTheme = () => {
