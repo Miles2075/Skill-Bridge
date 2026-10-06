@@ -324,6 +324,36 @@ export const lmsClient = {
     });
   },
 
+  // VIDEO UPLOADS
+  async uploadVideo(courseId: string, file: File): Promise<{ videoUrl: string; fileName: string; size: number }> {
+    const authHeaders = await getAuthHeaders();
+    const headers = { ...authHeaders } as Record<string, string>;
+    delete headers["Content-Type"];
+
+    const formData = new FormData();
+    formData.append("courseId", courseId);
+    formData.append("video", file);
+
+    const res = await fetch("/api/lms/upload-video", {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      let errMsg = `Upload failed: ${res.status} ${res.statusText}`;
+      try {
+        const body = await res.json();
+        if (body.error) errMsg = body.error;
+      } catch {
+        // ignore
+      }
+      throw new Error(errMsg);
+    }
+
+    return res.json();
+  },
+
   // LESSON MANAGEMENT
   async addLesson(
     courseId: string,
