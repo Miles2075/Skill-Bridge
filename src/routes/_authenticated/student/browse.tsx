@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   createCourseOrder,
   verifyCoursePayment,
-  simulateTestPayment,
 } from "@/lib/payments.functions";
 import {
   enrollInCourse,
@@ -113,21 +112,6 @@ function BrowseCoursesPage() {
       }
 
       const order = await createCourseOrder({ data: { courseId: course.id } });
-
-      if (order.isTestMode) {
-        const sim = await simulateTestPayment({ data: { orderId: order.orderId } });
-        await verifyCoursePayment({
-          data: {
-            courseId: course.id,
-            orderId: sim.razorpay_order_id,
-            paymentId: sim.razorpay_payment_id,
-            signature: sim.razorpay_signature,
-          },
-        });
-        await enrollFreeCourse(course);
-        setMessage(`Payment successful (Test Sandbox). You're enrolled in ${course.title}.`);
-        return;
-      }
 
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay)
