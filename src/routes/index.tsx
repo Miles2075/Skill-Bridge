@@ -46,7 +46,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { lmsClient, type StudentDashboardData } from "@/lib/lms-client";
+import { lmsClient, type ClientCourse, type StudentDashboardData } from "@/lib/lms-client";
 import {
   type AssignmentSubmission,
   type VideoComment,
@@ -347,36 +347,60 @@ function useCommerceState(
 
   useEffect(() => {
     (async () => {
-      const { data } = (await supabase
-        .from("courses")
-        .select("id, slug, price_inr, preview_minutes, video_url")) as unknown as {
-        data:
-          | {
-              id: string;
-              slug: string;
-              price_inr: number;
-              preview_minutes: number;
-              video_url: string;
-            }[]
-          | null;
-      };
-      {
+      try {
+        const { courses: apiCourses } = await lmsClient.getCourses();
+        const publishedCourses = apiCourses.filter((course) => course.status === "published");
+
+        const imageForSlug = (slug: string) => {
+          if (slug === "advanced-typescript") return tsThumb;
+          if (slug === "react-performance" || slug === "react-perf") return reactThumb;
+          if (slug === "system-design") return systemThumb;
+          if (slug === "dsa") return dsaThumb;
+          return tsThumb;
+        };
+
+        const dynamicCourses: Course[] = publishedCourses.map((course: ClientCourse) => ({
+          id: course.id,
+          slug: course.slug,
+          title: course.title,
+          instructor: course.instructor || "Lead Instructor",
+          description: course.description || "Learn practical skills with Skillbridge.",
+          progress: 0,
+          lessonsDone: 0,
+          lessonsTotal: 0,
+          nextLesson: "Start your first lesson",
+          level: course.level || "Intermediate",
+          hours: course.hours || 10,
+          rating: course.rating || 5,
+          reviews: course.reviews || "0",
+          learners: course.learners || "0",
+          category: course.category || "Development",
+          image: imageForSlug(course.slug),
+          bestseller: course.bestseller,
+        }));
+
+        setCoursesList(dynamicCourses.length > 0 ? dynamicCourses : initialCourses);
+
         const next: Record<string, CourseMeta> = {};
-        (data ?? []).forEach((c) => {
-          next[c.slug] = {
-            id: c.id,
-            price: c.price_inr,
-            preview: c.preview_minutes,
-            videoUrl: c.video_url,
+        publishedCourses.forEach((course) => {
+          next[course.slug] = {
+            id: course.id,
+            price: course.price_inr,
+            preview: course.preview_minutes,
+            videoUrl: course.video_url,
           };
-          if (c.slug === "react-performance") {
-            next["react-perf"] = next[c.slug]!;
-          }
-          if (c.slug === "react-perf") {
-            next["react-performance"] = next[c.slug]!;
-          }
         });
+
+        if (next["react-performance"]) {
+          next["react-perf"] = next["react-performance"];
+        }
+        if (next["react-perf"]) {
+          next["react-performance"] = next["react-perf"];
+        }
+
         setMeta(next);
+      } catch (error) {
+        console.error("Failed to load courses from LMS API:", error);
       }
     })();
   }, []);
