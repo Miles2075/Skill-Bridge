@@ -196,6 +196,13 @@
 }
 /* Dark-mode compatibility for existing dashboard utility classes. */
 @layer base {
+  .dark .bg-white\/95 { background-color: color-mix(in oklch, var(--background) 94%, transparent) !important; }
+  .dark .bg-white\/90 { background-color: color-mix(in oklch, var(--background) 90%, transparent) !important; }
+  .dark .bg-white\/80 { background-color: color-mix(in oklch, var(--background) 80%, transparent) !important; }
+  .dark .bg-slate-50\/60 { background-color: color-mix(in oklch, var(--secondary) 60%, transparent) !important; }
+  .dark .bg-slate-50\/70 { background-color: color-mix(in oklch, var(--secondary) 70%, transparent) !important; }
+  .dark .shadow-2xs { --tw-shadow-color: oklch(0.05 0.02 255 / 35%); }
+  .dark .hover\:bg-slate-50:hover { background-color: var(--secondary) !important; }
   .dark .bg-white { background-color: var(--color-card) !important; }
   .dark .bg-slate-50 { background-color: var(--color-background) !important; }
   .dark .bg-slate-100 { background-color: var(--color-secondary) !important; }
