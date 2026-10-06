@@ -127,6 +127,22 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       });
     }
 
+    // AUTH: PATCH /api/lms/profile
+    if (path === "profile" && method === "PATCH") {
+      if (!user.userId) return errorResponse("Unauthorized", 401);
+      const body = await req.json();
+      const displayName = body.displayName === undefined ? undefined : String(body.displayName);
+      const avatarUrl = body.avatarUrl === undefined ? undefined : body.avatarUrl === null ? null : String(body.avatarUrl);
+      if (displayName !== undefined && !displayName.trim()) return errorResponse("Display name cannot be empty.");
+      try {
+        const updated = lmsDB.updateUserProfile(user.userId, { displayName, avatarUrl });
+        if (!updated) return errorResponse("User not found.", 404);
+        return jsonResponse({ user: updated });
+      } catch (err) {
+        return errorResponse(err instanceof Error ? err.message : "Unable to update profile.");
+      }
+    }
+
     // AUTH: POST /api/lms/auth/logout
     if (path === "auth/logout" && method === "POST") {
       const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
