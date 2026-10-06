@@ -1,3 +1,5 @@
+import { lmsClient, type ClientCourse, type ClientLesson } from "@/lib/lms-client";
+
 export type Course = {
   id: string;
   slug: string;
@@ -28,7 +30,7 @@ export type Enrollment = {
   course_id: string;
   enrolled_at: string;
   completion_percentage: number;
-  status: "in_progress" | "completed";
+  status: "enrolled" | "in_progress" | "completed";
   completed_at: string | null;
 };
 
@@ -42,282 +44,163 @@ export type LessonProgress = {
   updated_at: string;
 };
 
-const COURSES_KEY = "skillbridge_local_courses";
-const LESSONS_KEY = "skillbridge_local_course_lessons";
-const ENROLLMENTS_KEY = "skillbridge_local_enrollments";
-const PROGRESS_KEY = "skillbridge_local_lesson_progress";
-const CERTIFICATES_KEY = "skillbridge_local_certificates";
-
-const VIDEO_TS =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-const VIDEO_REACT =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
-const VIDEO_SYS =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-const VIDEO_DSA =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4";
-
-const DEFAULT_COURSES: Course[] = [
-  {
-    id: "c-ts",
-    slug: "advanced-typescript",
-    title: "Advanced TypeScript & Design Patterns",
-    teacher_id: null,
-    price_inr: 1299,
-    preview_minutes: 5,
-    video_url: VIDEO_TS,
+function toCourse(course: ClientCourse): Course {
+  return {
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    teacher_id: course.teacher_id,
+    price_inr: course.price_inr,
+    preview_minutes: course.preview_minutes,
+    video_url: course.video_url,
     updated_at: new Date().toISOString(),
-    status: "published",
-  },
-  {
-    id: "c-react",
-    slug: "react-performance",
-    title: "React Performance & Architecture",
-    teacher_id: null,
-    price_inr: 1499,
-    preview_minutes: 5,
-    video_url: VIDEO_REACT,
-    updated_at: new Date().toISOString(),
-    status: "published",
-  },
-  {
-    id: "c-sys",
-    slug: "system-design",
-    title: "System Design Fundamentals",
-    teacher_id: null,
-    price_inr: 999,
-    preview_minutes: 5,
-    video_url: VIDEO_SYS,
-    updated_at: new Date().toISOString(),
-    status: "published",
-  },
-  {
-    id: "c-dsa",
-    slug: "dsa",
-    title: "Data Structures & Algorithms",
-    teacher_id: null,
-    price_inr: 799,
-    preview_minutes: 5,
-    video_url: VIDEO_DSA,
-    updated_at: new Date().toISOString(),
-    status: "draft",
-  },
-];
+    status: course.status,
+  };
+}
 
-const DEFAULT_LESSONS: Lesson[] = [
-  ["c-ts", "Course Overview & Project Setup", "12m", VIDEO_TS, true],
-  ["c-ts", "Advanced Generic Constraints & Type Mappings", "28m", VIDEO_TS, false],
-  ["c-ts", "Distributive Conditional Types & Infer", "34m", VIDEO_TS, false],
-  ["c-react", "React Profiler & Flamegraphs Deep Dive", "30m", VIDEO_REACT, true],
-  ["c-react", "Memoization and Rendering Optimization", "24m", VIDEO_REACT, false],
-  ["c-react", "Virtualization and Performance Architecture", "36m", VIDEO_REACT, false],
-  ["c-sys", "Scale from Zero to 10M Users", "25m", VIDEO_SYS, true],
-  ["c-sys", "Database Sharding & Consistent Hashing", "42m", VIDEO_SYS, false],
-  ["c-sys", "Caching, Queues and Reliability", "38m", VIDEO_SYS, false],
-  ["c-dsa", "Arrays, Strings and Complexity", "25m", VIDEO_DSA, true],
-  ["c-dsa", "Trees, Graphs and Traversals", "35m", VIDEO_DSA, false],
-  ["c-dsa", "Dynamic Programming Fundamentals", "40m", VIDEO_DSA, false],
-].map(([course_id, title, duration, video_url, preview], index) => ({
-  id: `lesson-${course_id}-${index + 1}`,
-  course_id: course_id as string,
-  title: title as string,
-  description: `${duration} lesson for this course.`,
-  video_url: video_url as string,
-  lesson_order: index + 1,
-  required: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-}));
+function toLesson(lesson: ClientLesson): Lesson {
+  return {
+    id: lesson.id,
+    course_id: lesson.course_id,
+    title: lesson.title,
+    description: lesson.description || null,
+    video_url: lesson.video_url || null,
+    lesson_order: lesson.lesson_order,
+    required: lesson.is_required,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
 
-function read<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
+export async function listPublishedCourses(): Promise<Course[]> {
+  const { courses } = await lmsClient.getCourses();
+  return courses.filter((course) => course.status === "published").map(toCourse);
+}
+
+export async function listLocalCourses(): Promise<Course[]> {
+  const { courses } = await lmsClient.getCourses();
+  return courses.map(toCourse);
+}
+
+export async function saveLocalCourse(course: Course): Promise<Course> {
+  const { course: updated } = await lmsClient.updateCourse(course.id, course);
+  return toCourse(updated);
+}
+
+export async function getCourseById(courseId: string): Promise<Course | null> {
   try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw) as T;
-    localStorage.setItem(key, JSON.stringify(fallback));
+    const { course } = await lmsClient.getCourse(courseId);
+    return toCourse(course);
   } catch {
-    return fallback;
+    return null;
   }
-  return fallback;
 }
 
-function write<T>(key: string, value: T) {
-  if (typeof window !== "undefined") localStorage.setItem(key, JSON.stringify(value));
+export async function getCourseLessons(courseId: string): Promise<Lesson[]> {
+  const { lessons } = await lmsClient.getCourse(courseId);
+  return lessons.map(toLesson).sort((a, b) => a.lesson_order - b.lesson_order);
 }
 
-function id(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+export async function getMyEnrollments(studentId: string): Promise<Enrollment[]> {
+  const { enrolledCourses } = await lmsClient.getStudentDashboard();
+  return enrolledCourses
+    .filter((course) => course.id)
+    .map((course) => ({
+      id: `enr_${course.id}_${studentId}`,
+      student_id: studentId,
+      course_id: course.id,
+      enrolled_at: course.enrolledAt,
+      completion_percentage: course.progress,
+      status:
+        course.status === "completed"
+          ? "completed"
+          : course.status === "enrolled"
+            ? "enrolled"
+            : "in_progress",
+      completed_at: course.completedAt,
+    }));
 }
 
-export async function listPublishedCourses() {
-  return read<Course[]>(COURSES_KEY, DEFAULT_COURSES).filter(
-    (course) => course.status === "published",
-  );
-}
-
-export async function listLocalCourses() {
-  return read<Course[]>(COURSES_KEY, DEFAULT_COURSES);
-}
-
-export async function saveLocalCourse(course: Course) {
-  const courses = read<Course[]>(COURSES_KEY, DEFAULT_COURSES);
-  const updated = { ...course, updated_at: new Date().toISOString() };
-  const index = courses.findIndex((item) => item.id === course.id);
-  if (index >= 0) courses[index] = updated;
-  else courses.unshift(updated);
-  write(COURSES_KEY, courses);
-  window.dispatchEvent(new CustomEvent("lms_courses_updated"));
-  return updated;
-}
-
-export async function getCourseById(courseId: string) {
-  return (
-    read<Course[]>(COURSES_KEY, DEFAULT_COURSES).find((course) => course.id === courseId) ?? null
-  );
-}
-
-export async function getCourseLessons(courseId: string) {
-  return read<Lesson[]>(LESSONS_KEY, DEFAULT_LESSONS)
-    .filter((lesson) => lesson.course_id === courseId)
-    .sort((a, b) => a.lesson_order - b.lesson_order);
-}
-
-export async function getMyEnrollments(studentId: string) {
-  return read<Enrollment[]>(ENROLLMENTS_KEY, []).filter(
-    (enrollment) => enrollment.student_id === studentId,
-  );
-}
-
-export async function getMyLessonProgress(studentId: string, courseId?: string) {
-  return read<LessonProgress[]>(PROGRESS_KEY, []).filter(
-    (item) => item.student_id === studentId && (!courseId || item.course_id === courseId),
-  );
-}
-
-export async function enrollInCourse(studentId: string, courseId: string) {
-  const courses = read<Course[]>(COURSES_KEY, DEFAULT_COURSES);
-  const course = courses.find((item) => item.id === courseId);
-  if (!course || course.status !== "published")
-    throw new Error("This course is not available for enrollment.");
-
-  const enrollments = read<Enrollment[]>(ENROLLMENTS_KEY, []);
-  const existing = enrollments.find(
-    (item) => item.student_id === studentId && item.course_id === courseId,
-  );
-  if (existing) return existing;
-
-  const enrollment: Enrollment = {
-    id: id("enr"),
+export async function getMyLessonProgress(
+  studentId: string,
+  courseId?: string,
+): Promise<LessonProgress[]> {
+  if (!courseId) return [];
+  const { lessonProgress } = await lmsClient.getCourse(courseId);
+  return lessonProgress.map((item) => ({
+    id: `progress_${studentId}_${item.lesson_id}`,
     student_id: studentId,
     course_id: courseId,
-    enrolled_at: new Date().toISOString(),
-    completion_percentage: 0,
-    status: "in_progress",
-    completed_at: null,
-  };
-  write(ENROLLMENTS_KEY, [enrollment, ...enrollments]);
-  window.dispatchEvent(new CustomEvent("lms_students_updated"));
-  return enrollment;
+    lesson_id: item.lesson_id,
+    completed: item.completed,
+    completed_at: item.completed_at,
+    updated_at: item.completed_at || new Date().toISOString(),
+  }));
 }
 
-export async function completeLesson(lessonId: string) {
-  const sessionRaw =
-    typeof window !== "undefined" ? localStorage.getItem("skillbridge_local_session") : null;
-  if (!sessionRaw) throw new Error("Please sign in before completing a lesson.");
-  const student = JSON.parse(sessionRaw) as { id: string };
-  const lessons = read<Lesson[]>(LESSONS_KEY, DEFAULT_LESSONS);
-  const lesson = lessons.find((item) => item.id === lessonId);
-  if (!lesson) throw new Error("Lesson not found.");
+export async function enrollInCourse(studentId: string, courseId: string): Promise<Enrollment> {
+  const { enrollment } = await lmsClient.enroll(courseId);
+  return {
+    id: enrollment.id,
+    student_id: enrollment.student_id || studentId,
+    course_id: enrollment.course_id,
+    enrolled_at: enrollment.enrolled_at,
+    completion_percentage: enrollment.completion_percentage,
+    status: enrollment.status,
+    completed_at: enrollment.completed_at,
+  };
+}
 
-  const progress = read<LessonProgress[]>(PROGRESS_KEY, []);
-  const now = new Date().toISOString();
-  const existing = progress.find(
-    (item) => item.student_id === student.id && item.lesson_id === lessonId,
-  );
-  if (existing) {
-    existing.completed = true;
-    existing.completed_at = existing.completed_at ?? now;
-    existing.updated_at = now;
-  } else {
-    progress.push({
-      id: id("progress"),
-      student_id: student.id,
-      course_id: lesson.course_id,
-      lesson_id: lesson.id,
-      completed: true,
-      completed_at: now,
-      updated_at: now,
-    });
-  }
-  write(PROGRESS_KEY, progress);
+export async function completeLesson(lessonId: string): Promise<Enrollment | null> {
+  const { enrolledCourses } = await lmsClient.getStudentDashboard();
 
-  const courseLessons = lessons.filter(
-    (item) => item.course_id === lesson.course_id && item.required,
-  );
-  const completedCount = progress.filter(
-    (item) =>
-      item.student_id === student.id &&
-      item.course_id === lesson.course_id &&
-      item.completed &&
-      courseLessons.some((l) => l.id === item.lesson_id),
-  ).length;
-  const percentage = Math.round((completedCount / Math.max(1, courseLessons.length)) * 100);
-  const enrollments = read<Enrollment[]>(ENROLLMENTS_KEY, []);
-  const enrollment = enrollments.find(
-    (item) => item.student_id === student.id && item.course_id === lesson.course_id,
-  );
-  if (enrollment) {
-    enrollment.completion_percentage = percentage;
-    enrollment.status = percentage >= 100 ? "completed" : "in_progress";
-    enrollment.completed_at = percentage >= 100 ? (enrollment.completed_at ?? now) : null;
-    write(ENROLLMENTS_KEY, enrollments);
-  }
-
-  if (percentage >= 100) {
-    const certificates = read<
-      Array<{
-        id: string;
-        student_id: string;
-        course_id: string;
-        certificate_number: string;
-        issued_at: string;
-      }>
-    >(CERTIFICATES_KEY, []);
-    if (
-      !certificates.some(
-        (certificate) =>
-          certificate.student_id === student.id && certificate.course_id === lesson.course_id,
-      )
-    ) {
-      certificates.push({
-        id: id("cert"),
-        student_id: student.id,
-        course_id: lesson.course_id,
-        certificate_number: `SKILL-${lesson.course_id.toUpperCase()}-${Date.now().toString().slice(-6)}`,
-        issued_at: now,
-      });
-      write(CERTIFICATES_KEY, certificates);
+  for (const course of enrolledCourses) {
+    const details = await lmsClient.getCourse(course.id);
+    if (details.lessons.some((lesson) => lesson.id === lessonId)) {
+      const result = await lmsClient.completeLesson(course.id, lessonId, true);
+      return {
+        id: `enr_${course.id}`,
+        student_id: "",
+        course_id: course.id,
+        enrolled_at: course.enrolledAt,
+        completion_percentage: result.progress,
+        status: result.isCompleted ? "completed" : "in_progress",
+        completed_at: result.isCompleted ? new Date().toISOString() : null,
+      };
     }
   }
 
-  window.dispatchEvent(new CustomEvent("lms_students_updated"));
-  window.dispatchEvent(new CustomEvent("lms_progress_updated"));
-  return enrollment ?? null;
+  throw new Error("Lesson not found in your enrolled courses.");
 }
 
-export async function getInstructorEnrollments(courseIds: string[]) {
+export async function getInstructorEnrollments(courseIds: string[]): Promise<Enrollment[]> {
+  const { students } = await lmsClient.getInstructorData();
   const allowed = new Set(courseIds);
-  return read<Enrollment[]>(ENROLLMENTS_KEY, []).filter((item) => allowed.has(item.course_id));
+  return students
+    .filter((student) => allowed.has(student.courseId))
+    .map((student) => ({
+      id: student.id,
+      student_id: student.studentId,
+      course_id: student.courseId,
+      enrolled_at: student.enrolledAt,
+      completion_percentage: student.progress,
+      status:
+        student.status === "completed"
+          ? "completed"
+          : student.status === "enrolled"
+            ? "enrolled"
+            : "in_progress",
+      completed_at: student.completedAt,
+    }));
 }
 
 export async function getCertificates(studentId: string) {
-  return read<
-    Array<{
-      id: string;
-      student_id: string;
-      course_id: string;
-      certificate_number: string;
-      issued_at: string;
-    }>
-  >(CERTIFICATES_KEY, []).filter((certificate) => certificate.student_id === studentId);
+  const { certificates } = await lmsClient.getStudentDashboard();
+  return certificates.map((certificate) => ({
+    id: certificate.id,
+    student_id: studentId,
+    course_id: "",
+    certificate_number: certificate.certificate_id,
+    issued_at: certificate.completion_date,
+  }));
 }
