@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import { lmsDB } from "./lms-db.server";
 
 interface UserContext {
@@ -317,6 +319,54 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
 
       const ok = lmsDB.deleteCourse(existing.id);
       return jsonResponse({ success: ok });
+    }
+
+    // POST /api/lms/upload-video
+    if (path === "upload-video" && method === "POST") {
+      if (!user.isTeacher || !user.userId) return errorResponse("Forbidden: Instructor role required", 403);
+
+      const formData = await req.formData();
+      const courseId = String(formData.get("courseId") || "");
+      const video = formData.get("video");
+      if (!courseId || !(video instanceof File)) return errorResponse("Course and video file are required.");
+
+      const course = lmsDB.getCourse(courseId);
+      if (!course) return errorResponse("Course not found.", 404);
+      if (!user.isAdmin && course.teacher_id && course.teacher_id !== user.userId) {
+        return errorResponse("Forbidden: You can only upload videos to your own courses.", 403);
+      }
+
+      const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
+      if (video.size > MAX_VIDEO_SIZE) {
+        return errorResponse("Video is too large. Maximum file size is 500 MB.", 413);
+      }
+
+      const allowedExtensions = new Set([".mp4", ".webm", ".mov", ".m4v"]);
+      const originalName = video.name || "video.mp4";
+      const dot = originalName.lastIndexOf(".");
+      const extension = dot >= 0 ? originalName.slice(dot).toLowerCase() : "";
+      if (!allowedExtensions.has(extension)) {
+        return errorResponse("Unsupported video format. Use MP4, WebM, MOV, or M4V.", 400);
+      }
+
+      const safeBase = originalName
+        .slice(0, dot >= 0 ? dot : originalName.length)
+        .replace(/[^a-zA-Z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80) || "video";
+      const uniqueName = `${course.id}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeBase}${extension}`;
+
+      const uploadDir = path.resolve(process.cwd(), "public", "uploads", "videos");
+      await fs.promises.mkdir(uploadDir, { recursive: true });
+      const filePath = path.join(uploadDir, uniqueName);
+      const buffer = Buffer.from(await video.arrayBuffer());
+      await fs.promises.writeFile(filePath, buffer);
+
+      return jsonResponse({
+        videoUrl: `/uploads/videos/${uniqueName}`,
+        fileName: originalName,
+        size: video.size,
+      });
     }
 
     // POST /api/lms/lesson (Add lesson)
