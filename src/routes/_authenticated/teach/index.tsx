@@ -1826,46 +1826,34 @@ function TeachDashboardPage() {
       {/* VIEW 10: PROFILE */}
       {/* ------------------------------------------------------------- */}
       {currentView === "profile" && (
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6 max-w-3xl">
           <div className="border-b border-slate-200 pb-3">
-            <h1 className="text-xl font-extrabold text-slate-900">Faculty Lead Profile</h1>
+            <h1 className="text-xl font-extrabold text-slate-900">Faculty Profile</h1>
             <p className="text-xs text-slate-500">
-              Instructor credentials, authorized departments, and accreditation status.
+              Change your profile picture and display name. These details appear throughout the Instructor Studio.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="grid size-16 place-items-center rounded-full bg-teal-700 text-xl font-bold text-white shadow-xs">
-                {(displayName[0] || "T").toUpperCase()}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{displayName}</h2>
-                <p className="text-xs text-slate-500">{user?.email}</p>
-                <span className="inline-block mt-1 rounded-full bg-teal-50 px-2.5 py-0.5 text-[10px] font-bold text-teal-800 border border-teal-200">
-                  Verified Faculty Lead & Department Chair
-                </span>
-              </div>
-            </div>
+          {user && (
+            <ProfileEditor
+              user={user}
+              accent="teal"
+              roleLabel="Verified Faculty Lead & Department Chair"
+            />
+          )}
 
-            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 text-xs">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-slate-500">Faculty Role:</span>
-                <p className="font-bold text-slate-900 mt-0.5">
-                  Senior Systems Architecture Instructor
-                </p>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-slate-500">Department:</span>
-                <p className="font-bold text-slate-900 mt-0.5">
-                  Software Systems & Distributed Computing
-                </p>
-              </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <span className="text-slate-500">Faculty Role</span>
+              <p className="mt-1 font-bold text-slate-900">Senior Systems Architecture Instructor</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <span className="text-slate-500">Department</span>
+              <p className="mt-1 font-bold text-slate-900">Software Systems & Distributed Computing</p>
             </div>
           </div>
         </div>
       )}
-
       {/* ------------------------------------------------------------- */}
       {/* VIEW 11: SETTINGS */}
       {/* ------------------------------------------------------------- */}
