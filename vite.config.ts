@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { Readable } from "node:stream";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
@@ -38,12 +39,13 @@ export default defineConfig({
                 else headers.set(k, v);
               }
             }
-            const chunks: Uint8Array[] = [];
-            if (req.method !== "GET" && req.method !== "HEAD") {
-              for await (const chunk of req) chunks.push(chunk as Uint8Array);
-            }
-            const body = chunks.length > 0 ? Buffer.concat(chunks) : undefined;
-            const webReq = new Request(url.href, { method: req.method, headers, body });
+            const hasBody = req.method !== "GET" && req.method !== "HEAD";
+            const webReq = new Request(url.href, {
+              method: req.method,
+              headers,
+              body: hasBody ? Readable.toWeb(req) : undefined,
+              duplex: "half",
+            });
             const webRes = await handleLmsApiRequest(webReq);
             if (!webRes) return next();
             res.statusCode = webRes.status;
