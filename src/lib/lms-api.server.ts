@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { lmsDB } from "./lms-db.server";
 
 interface UserContext {
@@ -360,8 +362,10 @@ export async function handleLmsApiRequest(req: Request): Promise<Response | null
       const uploadDir = path.resolve(process.cwd(), "public", "uploads", "videos");
       await fs.promises.mkdir(uploadDir, { recursive: true });
       const filePath = path.join(uploadDir, uniqueName);
-      const buffer = Buffer.from(await video.arrayBuffer());
-      await fs.promises.writeFile(filePath, buffer);
+      await pipeline(
+        Readable.fromWeb(video.stream()),
+        fs.createWriteStream(filePath),
+      );
 
       return jsonResponse({
         videoUrl: `/uploads/videos/${uniqueName}`,
