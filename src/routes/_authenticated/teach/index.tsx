@@ -1555,6 +1555,7 @@ function TeachDashboardPage() {
               <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                 <tr>
                   <th className="px-4 py-3">Learner</th>
+                  <th className="px-4 py-3">Certificates Earned</th>
                   <th className="px-4 py-3">Course</th>
                   <th className="px-4 py-3">Progress</th>
                   <th className="px-4 py-3">Lessons Done</th>
@@ -1572,6 +1573,11 @@ function TeachDashboardPage() {
                       <td className="px-4 py-3">
                         <div className="font-bold text-slate-900">{s.studentName}</div>
                         <div className="text-[11px] text-slate-500">{s.studentEmail}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                          {students.filter((item) => item.studentId === s.studentId && item.certificateEarned).length}
+                        </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-teal-800">{s.courseTitle}</td>
                       <td className="px-4 py-3">
@@ -1624,7 +1630,7 @@ function TeachDashboardPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-xs text-slate-500">
+                    <td colSpan={10} className="py-8 text-center text-xs text-slate-500">
                       No student enrollments recorded yet.
                     </td>
                   </tr>
