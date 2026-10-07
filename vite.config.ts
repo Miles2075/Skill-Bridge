@@ -131,14 +131,21 @@ export default defineConfig({
               const uploadUrl = new URL(req.url, `http://${req.headers.host || "localhost:3000"}`);
               const courseId = uploadUrl.searchParams.get("courseId") || "";
               const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
-              const session = token ? lmsDB.validateSession(token) : null;
-              const role = session?.roles?.includes("admin")
+              const localSession = token ? lmsDB.validateSession(token) : null;
+              const headerUserId = String(req.headers["x-user-id"] || "").trim();
+              const headerRole = String(req.headers["x-user-role"] || "").trim().toLowerCase();
+              const userId = localSession?.user.id || headerUserId || null;
+              const role = localSession?.roles?.includes("admin")
                 ? "admin"
-                : session?.roles?.includes("teacher")
+                : localSession?.roles?.includes("teacher")
                   ? "teacher"
-                  : "student";
+                  : headerRole === "admin"
+                    ? "admin"
+                    : headerRole === "teacher"
+                      ? "teacher"
+                      : "student";
 
-              if (!session || (role !== "teacher" && role !== "admin")) {
+              if (!userId || (role !== "teacher" && role !== "admin")) {
                 res.statusCode = 403;
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ error: "Forbidden: Instructor role required" }));
@@ -152,7 +159,7 @@ export default defineConfig({
                 res.end(JSON.stringify({ error: "Course not found." }));
                 return;
               }
-              if (role !== "admin" && course.teacher_id && course.teacher_id !== session.user.id) {
+              if (role !== "admin" && course.teacher_id && course.teacher_id !== userId) {
                 res.statusCode = 403;
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ error: "Forbidden: You can only upload videos to your own courses." }));
