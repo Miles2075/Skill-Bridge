@@ -1848,7 +1848,7 @@ function PlayerModal({
     },
   ];
 
-  const lectures = dbLessons.length > 0 ? dbLessons : defaultLectures;
+  const lectures = dbLessons;
   const [playerTab, setPlayerTab] = useState<"playlist" | "qa" | "notes">("playlist");
   const lecture = lectures[active] || lectures[0]!;
   const { meta, owned, buy, buying, user, isTeacher } = useCommerce();
