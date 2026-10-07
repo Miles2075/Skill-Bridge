@@ -2025,6 +2025,8 @@ function PlayerModal({
               <Button variant="chrome" size="sm" onClick={markComplete} className="gap-1.5">
                 <Check className="size-4" /> Mark as Complete
               </Button>
+            ) : dbLessons.length === 0 && (isOwned || isCompleted || !m) ? (
+              <span className="text-xs font-semibold text-muted-foreground">Syllabus pending</span>
             ) : (
               <Button
                 variant="chrome"
