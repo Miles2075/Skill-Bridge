@@ -1823,7 +1823,14 @@ function PlayerModal({
 
   const lectures = dbLessons;
   const [playerTab, setPlayerTab] = useState<"playlist" | "qa" | "notes">("playlist");
-  const lecture = lectures[active] || lectures[0]!;
+  const lecture = lectures[active] || {
+    id: "__course_video__",
+    title: course.title,
+    length: "",
+    video_url: "",
+    description: "",
+    completed: false,
+  };
   const { meta, owned, buy, buying, user, isTeacher } = useCommerce();
   const m = meta[course.slug];
   const isOwned = !!m && owned.has(m.id);
