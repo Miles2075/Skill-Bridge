@@ -1821,33 +1821,6 @@ function PlayerModal({
     };
   }, [course.slug]);
 
-  const defaultLectures = [
-    {
-      id: "1",
-      title: "1. Foundations & Overview",
-      length: "15:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-    {
-      id: "2",
-      title: "2. Core Implementation",
-      length: "20:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-    {
-      id: "3",
-      title: "3. Advanced Production Patterns",
-      length: "25:00",
-      video_url: "",
-      description: "",
-      completed: false,
-    },
-  ];
-
   const lectures = dbLessons;
   const [playerTab, setPlayerTab] = useState<"playlist" | "qa" | "notes">("playlist");
   const lecture = lectures[active] || lectures[0]!;
