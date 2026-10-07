@@ -1912,7 +1912,8 @@ function PlayerModal({
 
   const markComplete = async () => {
     const curLesson = lectures[active];
-    if (!curLesson) return;
+    // Never send a fake lesson id to the LMS.
+    if (!curLesson || dbLessons.length === 0) return;
     try {
       const res = await lmsClient.completeLesson(course.slug, curLesson.id, true);
       setDbLessons((prev) => prev.map((l, i) => (i === active ? { ...l, completed: true } : l)));
