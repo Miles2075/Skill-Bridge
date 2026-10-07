@@ -2021,7 +2021,7 @@ function PlayerModal({
               </p>
             </div>
 
-            {isOwned || isCompleted || !m ? (
+            {dbLessons.length > 0 && (isOwned || isCompleted || !m) ? (
               <Button variant="chrome" size="sm" onClick={markComplete} className="gap-1.5">
                 <Check className="size-4" /> Mark as Complete
               </Button>
